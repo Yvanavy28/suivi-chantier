@@ -6,6 +6,9 @@ import Home from './pages/Home'
 import NouveauChantier from './pages/NouveauChantier'
 import FicheChantier from './pages/FicheChantier'
 import ModifierChantier from './pages/ModifierChantier'
+import Entreprises from './pages/Entreprises'
+import NouvelleEntreprise from './pages/NouvelleEntreprise'
+import FicheEntreprise from './pages/FicheEntreprise'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -32,6 +35,9 @@ export default function App() {
         <Route path="/nouveau-chantier" element={<NouveauChantier />} />
         <Route path="/chantier/:id" element={<FicheChantier />} />
         <Route path="/chantier/:id/modifier" element={<ModifierChantier />} />
+        <Route path="/entreprises" element={<Entreprises />} />
+        <Route path="/nouvelle-entreprise" element={<NouvelleEntreprise />} />
+        <Route path="/entreprise/:id" element={<FicheEntreprise />} />
       </Routes>
     </BrowserRouter>
   )
