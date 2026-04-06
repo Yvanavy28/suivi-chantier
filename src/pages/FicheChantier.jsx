@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import PlanningGantt from '../components/PlanningGantt'
+import AjoutFacture from '../components/AjoutFacture'
 
 export default function FicheChantier() {
   const { id } = useParams()
@@ -9,19 +10,29 @@ export default function FicheChantier() {
   const [tab, setTab] = useState(0)
   const [project, setProject] = useState(null)
   const [lots, setLots] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [delayWeeks, setDelayWeeks] = useState(0)
+  const [showAjoutFacture, setShowAjoutFacture] = useState(false)
 
   useEffect(() => {
-    async function fetch() {
-      const { data: p } = await supabase.from('projects').select('*, clients(*)').eq('id', id).single()
-      if (p) { setProject(p); setDelayWeeks(p.delay_weeks || 0) }
-      const { data: pl } = await supabase.from('project_lots').select('*, lots(*), companies(*)').eq('project_id', id)
-      if (pl) setLots(pl)
-      setLoading(false)
-    }
-    fetch()
+    loadData()
   }, [id])
+
+  async function loadData() {
+    const [{ data: p }, { data: pl }, { data: cs }, { data: docs }] = await Promise.all([
+      supabase.from('projects').select('*, clients(*)').eq('id', id).single(),
+      supabase.from('project_lots').select('*, lots(*), companies(*)').eq('project_id', id),
+      supabase.from('companies').select('*').order('name'),
+      supabase.from('documents').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+    ])
+    if (p) { setProject(p); setDelayWeeks(p.delay_weeks || 0) }
+    if (pl) setLots(pl)
+    if (cs) setCompanies(cs)
+    if (docs) setDocuments(docs)
+    setLoading(false)
+  }
 
   async function saveDelay(val) {
     setDelayWeeks(val)
@@ -45,12 +56,18 @@ export default function FicheChantier() {
     return lots.reduce((s, l) => s + (l.unlocked_ht || 0), 0)
   }
 
+  function getDocsByCategory(cat) {
+    return documents.filter(d => d.category === cat)
+  }
+
   if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>Chargement...</div>
   if (!project) return <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>Chantier introuvable</div>
 
   const pct = getBudgetPct()
   const fillColor = pct > 80 ? '#E24B4A' : pct > 50 ? '#EF9F27' : '#1D9E75'
   const tabs = ['Synthese', 'Lots', 'Planning', 'Alertes', 'Documents', 'Infos']
+  const docCategories = ['contrats', 'plans', 'pv_reunion', 'factures', 'devis']
+  const docLabels = { contrats: 'Contrats', plans: 'Plans', pv_reunion: 'PV de reunion', factures: 'Factures', devis: 'Devis' }
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f4f0' }}>
@@ -65,7 +82,7 @@ export default function FicheChantier() {
             <div style={{ fontSize: 11, color: '#888' }}>{project.ref_number}{project.address ? ' · ' + project.address : ''}</div>
           </div>
         </div>
- <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
       </div>
 
       <div style={{ display: 'flex', background: '#fff', borderBottom: '0.5px solid #e0dfd7', overflowX: 'auto', scrollbarWidth: 'none' }}>
@@ -110,6 +127,24 @@ export default function FicheChantier() {
                 </div>
               </div>
             </div>
+
+            <div onClick={() => setShowAjoutFacture(!showAjoutFacture)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
+              {showAjoutFacture ? 'Fermer' : '+ Ajouter une facture'}
+            </div>
+
+            {showAjoutFacture && (
+              <AjoutFacture
+                projectId={id}
+                lots={lots}
+                companies={companies}
+                onSuccess={() => {
+                  setShowAjoutFacture(false)
+                  loadData()
+                }}
+              />
+            )}
+
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Planning & delai</div>
             <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -142,14 +177,14 @@ export default function FicheChantier() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Lots du chantier</div>
             {lots.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucun lot defini pour ce chantier</div>
+              <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucun lot defini</div>
             )}
             {lots.map((l, i) => {
               const colors = ['#1D9E75','#EF9F27','#378ADD','#7F77DD','#D85A30','#D4537E','#3B6D11']
               const color = colors[i % colors.length]
               const lotPct = l.amount_ht ? Math.round((l.unlocked_ht || 0) / l.amount_ht * 100) : 0
               return (
-                <div key={l.id} style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={l.id} style={{ background: "#fff", border: "0.5px solid #e0dfd7", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/chantier/" + id + "/lot/" + l.id)}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }}></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{l.lots?.name}</div>
@@ -178,31 +213,43 @@ export default function FicheChantier() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 12px', borderRadius: 8, background: '#FCEBEB', cursor: 'pointer' }} onClick={() => setTab(0)}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#E24B4A', marginTop: 4, flexShrink: 0 }}></div>
                 <div>
-                  <div style={{ fontSize: 12, color: '#1a1a1a' }}>Retard de {delayWeeks} semaine(s) sur ce chantier</div>
+                  <div style={{ fontSize: 12, color: '#1a1a1a' }}>Retard de {delayWeeks} semaine(s)</div>
                   <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>Modifier dans l onglet Synthese</div>
                   <div style={{ fontSize: 11, color: '#185FA5', fontWeight: 500, marginTop: 4 }}>→ Voir la synthese</div>
                 </div>
               </div>
             )}
             {delayWeeks === 0 && (
-              <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucune alerte pour ce chantier</div>
+              <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucune alerte</div>
             )}
           </div>
         )}
 
         {tab === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {['Contrats','Plans','PV de reunion','Factures','Devis'].map(cat => (
-              <div key={cat}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#888', padding: '6px 0 4px', display: 'flex', justifyContent: 'space-between' }}>
-                  {cat} <span style={{ fontSize: 11, background: '#f5f4f0', padding: '1px 6px', borderRadius: 10 }}>0</span>
+            {docCategories.map(cat => {
+              const docs = getDocsByCategory(cat)
+              return (
+                <div key={cat}>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: '#888', padding: '6px 0 4px', display: 'flex', justifyContent: 'space-between' }}>
+                    {docLabels[cat]}
+                    <span style={{ fontSize: 11, background: '#f5f4f0', padding: '1px 6px', borderRadius: 10 }}>{docs.length}</span>
+                  </div>
+                  {docs.length === 0 && (
+                    <div style={{ fontSize: 12, color: '#aaa', padding: '6px 10px', background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 8 }}>Aucun document</div>
+                  )}
+                  {docs.map(doc => (
+                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 8, marginBottom: 5 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
+                      </div>
+                      <div style={{ flex: 1, fontSize: 12, color: '#1a1a1a' }}>{doc.name}</div>
+                      {doc.ai_extracted && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#E6F1FB', color: '#0C447C' }}>IA</span>}
+                    </div>
+                  ))}
                 </div>
-                <div style={{ fontSize: 12, color: '#aaa', padding: '6px 10px', background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 8 }}>Aucun document</div>
-              </div>
-            ))}
-            <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: '#888', border: '0.5px dashed #ccc', borderRadius: 8, padding: 9, cursor: 'pointer', background: 'none', width: '100%', fontFamily: 'inherit' }}>
-              + Ajouter un document
-            </button>
+              )
+            })}
           </div>
         )}
 

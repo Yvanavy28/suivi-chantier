@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import ExtracteurIA from '../components/ExtracteurIA'
 
 export default function FicheEntreprise() {
   const { id } = useParams()
@@ -35,8 +36,7 @@ export default function FicheEntreprise() {
 
   function getDaysLeft(endDate) {
     if (!endDate) return null
-    const diff = Math.round((new Date(endDate) - new Date()) / (1000 * 60 * 60 * 24))
-    return diff
+    return Math.round((new Date(endDate) - new Date()) / (1000 * 60 * 60 * 24))
   }
 
   function getInsStatus(ins) {
@@ -78,6 +78,7 @@ export default function FicheEntreprise() {
             <div style={{ fontSize: 11, color: '#888' }}>{company.trade || 'Entreprise'}</div>
           </div>
         </div>
+        <div onClick={() => navigate('/entreprise/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
       </div>
 
       <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '0.5px solid #e0dfd7', display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -116,9 +117,13 @@ export default function FicheEntreprise() {
 
         {tab === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-            <div onClick={() => setShowAddIns(!showAddIns)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#1D9E75', border: '0.5px solid #1D9E75', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
-              + Ajouter une assurance
+            <ExtracteurIA
+              type="insurance"
+              companyId={id}
+              onSuccess={() => window.location.reload()}
+            />
+            <div onClick={() => setShowAddIns(!showAddIns)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#888', border: '0.5px dashed #e0dfd7', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
+              + Saisir manuellement
             </div>
 
             {showAddIns && (
@@ -237,7 +242,7 @@ export default function FicheEntreprise() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{pl.amount_ht ? pl.amount_ht.toLocaleString('fr-FR') + ' EUR' : '- EUR'}</div>
-                    <div style={{ fontSize: 11, color: '#888' }}>{pl.unlocked_ht ? Math.round(pl.unlocked_ht / pl.amount_ht * 100) : 0}% debloque</div>
+                    <div style={{ fontSize: 11, color: '#888' }}>{pl.amount_ht ? Math.round((pl.unlocked_ht || 0) / pl.amount_ht * 100) : 0}% debloque</div>
                   </div>
                 </div>
               )
