@@ -11,6 +11,7 @@ import NouvelleEntreprise from './pages/NouvelleEntreprise'
 import FicheEntreprise from './pages/FicheEntreprise'
 import ModifierEntreprise from './pages/ModifierEntreprise'
 import FicheLot from './pages/FicheLot'
+import Reglages from './pages/Reglages'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/nouvelle-entreprise" element={<NouvelleEntreprise />} />
         <Route path="/entreprise/:id" element={<FicheEntreprise />} />
         <Route path="/entreprise/:id/modifier" element={<ModifierEntreprise />} />
+        <Route path="/reglages" element={<Reglages />} />
       </Routes>
     </BrowserRouter>
   )
