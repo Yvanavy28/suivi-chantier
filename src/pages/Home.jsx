@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
 
 export default function Home() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function fetchProjects() {
@@ -48,14 +50,14 @@ export default function Home() {
         {!loading && projects.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>
             Aucun chantier en cours.<br />
-            <span style={{ color: '#1D9E75', cursor: 'pointer' }}>Creer votre premier chantier</span>
+            <span onClick={() => navigate('/nouveau-chantier')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Creer votre premier chantier</span>
           </div>
         )}
         {projects.map(p => {
           const pct = getBudgetPct(p)
           const fillColor = pct > 80 ? '#E24B4A' : pct > 50 ? '#EF9F27' : '#1D9E75'
           return (
-            <div key={p.id} style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 12, padding: '12px 14px', cursor: 'pointer' }}>
+            <div key={p.id} onClick={() => navigate('/chantier/' + p.id)} style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 12, padding: '12px 14px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
                 <div style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: p.delay_weeks > 0 ? '#FAEEDA' : '#EAF3DE', color: p.delay_weeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>

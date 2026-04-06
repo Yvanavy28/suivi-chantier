@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import NouveauChantier from './pages/NouveauChantier'
+import FicheChantier from './pages/FicheChantier'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/nouveau-chantier" element={<NouveauChantier />} />
+        <Route path="/chantier/:id" element={<FicheChantier />} />
       </Routes>
     </BrowserRouter>
   )
