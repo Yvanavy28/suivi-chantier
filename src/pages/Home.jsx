@@ -32,7 +32,7 @@ export default function Home() {
       <div style={{ background: '#fff', padding: '16px', borderBottom: '0.5px solid #e0dfd7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 17, fontWeight: 500 }}>Mes chantiers</div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{projects.length} en cours</div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{projects.length} en cours · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
         <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#0F6E56', cursor: 'pointer' }}>
           YV
