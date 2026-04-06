@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import NouveauChantier from './pages/NouveauChantier'
 import FicheChantier from './pages/FicheChantier'
+import ModifierChantier from './pages/ModifierChantier'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/nouveau-chantier" element={<NouveauChantier />} />
         <Route path="/chantier/:id" element={<FicheChantier />} />
+        <Route path="/chantier/:id/modifier" element={<ModifierChantier />} />
       </Routes>
     </BrowserRouter>
   )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PlanningGantt from '../components/PlanningGantt'
 
 export default function FicheChantier() {
   const { id } = useParams()
@@ -30,7 +31,7 @@ export default function FicheChantier() {
   function getEndDate() {
     if (!project?.start_date || !project?.duration_months) return '-'
     const d = new Date(project.start_date)
-    d.setMonth(d.getMonth() + project.duration_months + (delayWeeks * 7 / 30))
+    d.setMonth(d.getMonth() + project.duration_months + Math.round(delayWeeks * 7 / 30))
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
@@ -49,7 +50,7 @@ export default function FicheChantier() {
 
   const pct = getBudgetPct()
   const fillColor = pct > 80 ? '#E24B4A' : pct > 50 ? '#EF9F27' : '#1D9E75'
-  const tabs = ['Synthese', 'Lots', 'Alertes', 'Documents', 'Infos']
+  const tabs = ['Synthese', 'Lots', 'Planning', 'Alertes', 'Documents', 'Infos']
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f4f0' }}>
@@ -64,18 +65,18 @@ export default function FicheChantier() {
             <div style={{ fontSize: 11, color: '#888' }}>{project.ref_number}{project.address ? ' · ' + project.address : ''}</div>
           </div>
         </div>
-        <div style={{ fontSize: 12, color: '#888', border: '0.5px solid #e0dfd7', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Modifier</div>
+ <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
       </div>
 
       <div style={{ display: 'flex', background: '#fff', borderBottom: '0.5px solid #e0dfd7', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {tabs.map((t, i) => (
-          <div key={i} onClick={() => setTab(i)} style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', borderBottom: tab === i ? '2px solid #1a1a1a' : '2px solid transparent', color: tab === i ? '#1a1a1a' : '#888', fontWeight: tab === i ? 500 : 400, flexShrink: 0 }}>
-            {t}{i === 2 ? ' !' : ''}
+          <div key={i} onClick={() => setTab(i)} style={{ padding: '10px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', borderBottom: tab === i ? '2px solid #1a1a1a' : '2px solid transparent', color: tab === i ? '#1a1a1a' : '#888', fontWeight: tab === i ? 500 : 400, flexShrink: 0 }}>
+            {t}
           </div>
         ))}
       </div>
 
-      <div style={{ padding: '14px 14px 80px' }}>
+      <div style={{ padding: tab === 2 ? '14px 8px 80px' : '14px 14px 80px' }}>
 
         {tab === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -109,7 +110,6 @@ export default function FicheChantier() {
                 </div>
               </div>
             </div>
-
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Planning & delai</div>
             <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -131,12 +131,7 @@ export default function FicheChantier() {
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '0.5px solid #e0dfd7' }}>
                 <div style={{ flex: 1, fontSize: 12, color: '#888' }}>Correction manuelle du retard</div>
-                <input
-                  type="number"
-                  value={delayWeeks}
-                  onChange={e => saveDelay(e.target.value)}
-                  style={{ width: 60, fontSize: 13, padding: '5px 8px', borderRadius: 6, border: '0.5px solid #e0dfd7', background: '#f5f4f0', textAlign: 'center', fontFamily: 'inherit' }}
-                />
+                <input type="number" value={delayWeeks} onChange={e => saveDelay(e.target.value)} style={{ width: 60, fontSize: 13, padding: '5px 8px', borderRadius: 6, border: '0.5px solid #e0dfd7', background: '#f5f4f0', textAlign: 'center', fontFamily: 'inherit' }} />
                 <div style={{ fontSize: 12, color: '#888' }}>semaines</div>
               </div>
             </div>
@@ -150,7 +145,7 @@ export default function FicheChantier() {
               <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucun lot defini pour ce chantier</div>
             )}
             {lots.map((l, i) => {
-              const colors = ['#1D9E75', '#EF9F27', '#378ADD', '#7F77DD', '#D85A30', '#D4537E', '#3B6D11']
+              const colors = ['#1D9E75','#EF9F27','#378ADD','#7F77DD','#D85A30','#D4537E','#3B6D11']
               const color = colors[i % colors.length]
               const lotPct = l.amount_ht ? Math.round((l.unlocked_ht || 0) / l.amount_ht * 100) : 0
               return (
@@ -173,6 +168,10 @@ export default function FicheChantier() {
         )}
 
         {tab === 2 && (
+          <PlanningGantt projectId={id} lots={lots} />
+        )}
+
+        {tab === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Alertes</div>
             {delayWeeks > 0 && (
@@ -191,9 +190,9 @@ export default function FicheChantier() {
           </div>
         )}
 
-        {tab === 3 && (
+        {tab === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {['Contrats', 'Plans', 'PV de reunion', 'Factures', 'Devis'].map(cat => (
+            {['Contrats','Plans','PV de reunion','Factures','Devis'].map(cat => (
               <div key={cat}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#888', padding: '6px 0 4px', display: 'flex', justifyContent: 'space-between' }}>
                   {cat} <span style={{ fontSize: 11, background: '#f5f4f0', padding: '1px 6px', borderRadius: 10 }}>0</span>
@@ -207,7 +206,7 @@ export default function FicheChantier() {
           </div>
         )}
 
-        {tab === 4 && (
+        {tab === 5 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Chantier</div>
             {[
@@ -255,12 +254,6 @@ export default function FicheChantier() {
   )
 }
 
-const card = {
-  background: '#f5f4f0', borderRadius: 8, padding: '10px 12px'
-}
-const cardLabel = {
-  fontSize: 11, color: '#888', marginBottom: 4
-}
-const cardVal = {
-  fontSize: 16, fontWeight: 500, color: '#1a1a1a'
-}
+const card = { background: '#f5f4f0', borderRadius: 8, padding: '10px 12px' }
+const cardLabel = { fontSize: 11, color: '#888', marginBottom: 4 }
+const cardVal = { fontSize: 16, fontWeight: 500, color: '#1a1a1a' }
