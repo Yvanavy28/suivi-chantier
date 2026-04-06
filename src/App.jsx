@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Home from './pages/Home'
+import NouveauChantier from './pages/NouveauChantier'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -26,6 +27,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/nouveau-chantier" element={<NouveauChantier />} />
       </Routes>
     </BrowserRouter>
   )
