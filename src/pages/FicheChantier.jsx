@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import PlanningGantt from '../components/PlanningGantt'
 import AjoutFacture from '../components/AjoutFacture'
+import PlanningEditor from '../components/PlanningEditor'
 
 export default function FicheChantier() {
   const { id } = useParams()
@@ -146,30 +147,14 @@ export default function FicheChantier() {
             )}
 
             <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Planning & delai</div>
-            <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 13 }}>Avancement</span>
-                <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: delayWeeks > 0 ? '#FAEEDA' : '#EAF3DE', color: delayWeeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>
-                  {delayWeeks > 0 ? 'Retard' : 'En cours'}
-                </span>
-              </div>
-              {project.start_date && (
-                <div style={{ fontSize: 12, color: '#888' }}>
-                  {new Date(project.start_date).toLocaleDateString('fr-FR')} → {getEndDate()}
-                </div>
-              )}
-              <div style={{ height: 4, background: '#e0dfd7', borderRadius: 2, margin: '8px 0 4px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: pct + '%', background: '#EF9F27', borderRadius: 2 }}></div>
-              </div>
-              {delayWeeks > 0 && (
-                <div style={{ fontSize: 11, color: '#BA7517', textAlign: 'right' }}>+{delayWeeks} semaines de retard</div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '0.5px solid #e0dfd7' }}>
-                <div style={{ flex: 1, fontSize: 12, color: '#888' }}>Correction manuelle du retard</div>
-                <input type="number" value={delayWeeks} onChange={e => saveDelay(e.target.value)} style={{ width: 60, fontSize: 13, padding: '5px 8px', borderRadius: 6, border: '0.5px solid #e0dfd7', background: '#f5f4f0', textAlign: 'center', fontFamily: 'inherit' }} />
-                <div style={{ fontSize: 12, color: '#888' }}>semaines</div>
-              </div>
-            </div>
+            <PlanningEditor
+              project={project}
+              projectId={id}
+              onUpdate={(updated) => {
+                setProject(prev => ({ ...prev, ...updated }))
+                setDelayWeeks(updated.delay_weeks || 0)
+              }}
+            />
           </div>
         )}
 
