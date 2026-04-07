@@ -180,7 +180,12 @@ export default function Home() {
                   <span style={{ fontSize: 11, color: '#A32D2D', fontWeight: 500 }}>Dépassement de délai — cliquer pour modifier</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              {p.cover_image_url && (
+  <div style={{ height: 100, borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+    <img src={p.cover_image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+  </div>
+)}
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
                 <div style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: isAlert ? '#FCEBEB' : p.delay_weeks > 0 ? '#FAEEDA' : '#EAF3DE', color: isAlert ? '#A32D2D' : p.delay_weeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>
                   {isAlert ? 'Délai dépassé' : p.delay_weeks > 0 ? 'Retard' : 'En cours'}
