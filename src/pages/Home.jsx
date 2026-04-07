@@ -1,16 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
 
-function getOuvrablesDays(start, end, holidays = []) {
+function getOuvrablesDays(start, end) {
   let count = 0
   const current = new Date(start)
   const endDate = new Date(end)
   while (current <= endDate) {
     const day = current.getDay()
-    const dateStr = current.toISOString().split('T')[0]
-    if (day !== 0 && day !== 6 && !holidays.includes(dateStr)) count++
+    if (day !== 0 && day !== 6) count++
     current.setDate(current.getDate() + 1)
   }
   return count
@@ -39,11 +38,23 @@ export default function Home() {
   const [profile, setProfile] = useState(null)
   const [activeTab, setActiveTab] = useState('en_cours')
   const [now, setNow] = useState(new Date())
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000)
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   useEffect(() => {
@@ -59,6 +70,11 @@ export default function Home() {
     }
     fetchData()
   }, [])
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    navigate('/')
+  }
 
   function getBudgetPct(project) {
     if (!project.budget_ht || project.budget_ht === 0) return 0
@@ -111,26 +127,54 @@ export default function Home() {
     <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 80, minHeight: '100vh', background: '#f5f4f0' }}>
 
       <div style={{ background: '#fff', padding: '16px', borderBottom: '0.5px solid #e0dfd7' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#aaa', marginBottom: 4, textAlign: 'center' }}>
-              {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} · {timeStr}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 500, color: '#1a1a1a', textAlign: 'center', letterSpacing: '-0.3px' }}>{getDisplayName()}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: '#aaa' }}>
+            {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} · {timeStr}
           </div>
-          <div onClick={() => navigate('/reglages')} style={{ cursor: 'pointer', flexShrink: 0, marginLeft: 12 }}>
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e0dfd7' }} />
-            ) : (
-              <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#0F6E56' }}>
-                {getInitials()}
+          <div style={{ position: 'relative' }} ref={menuRef}>
+            <div onClick={() => setShowMenu(!showMenu)} style={{ cursor: 'pointer' }}>
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="avatar" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e0dfd7' }} />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: '#0F6E56' }}>
+                  {getInitials()}
+                </div>
+              )}
+            </div>
+
+            {showMenu && (
+              <div style={{ position: 'absolute', top: 44, right: 0, background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: 200, zIndex: 200, overflow: 'hidden' }}>
+                <div style={{ padding: '10px 14px', borderBottom: '0.5px solid #e0dfd7' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{getDisplayName()}</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>{profile?.email || ''}</div>
+                </div>
+                <div onClick={() => { setShowMenu(false); navigate('/reglages') }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '0.5px solid #f0efea' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="#555" strokeWidth="1.2"/><path d="M2 13c0-2.5 2.5-4 6-4s6 1.5 6 4" stroke="#555" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  Réglages utilisateur
+                </div>
+                <div onClick={() => { setShowMenu(false); navigate('/reglages') }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '0.5px solid #f0efea' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="#555" strokeWidth="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="#555" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  Réglages application
+                </div>
+                <div onClick={() => { setShowMenu(false); handleLogout() }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', cursor: 'pointer', fontSize: 13, color: '#E24B4A' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="#E24B4A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Déconnexion
+                </div>
               </div>
             )}
           </div>
         </div>
 
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="logo" style={{ height: 52, maxWidth: 200, objectFit: 'contain', borderRadius: 8 }} />
+          ) : (
+            <div style={{ fontSize: 22, fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.3px' }}>{getDisplayName()}</div>
+          )}
+        </div>
+
         {alertCount > 0 && (
-          <div style={{ marginTop: 10, background: '#FCEBEB', borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: '#FCEBEB', borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#E24B4A', flexShrink: 0 }}></div>
             <div style={{ fontSize: 12, color: '#A32D2D', fontWeight: 500 }}>
               {alertCount} chantier{alertCount > 1 ? 's' : ''} en dépassement de délai
@@ -138,7 +182,7 @@ export default function Home() {
           </div>
         )}
 
-        <div style={{ marginTop: 14 }}>
+        <div>
           <div style={{ fontSize: 17, fontWeight: 500, color: '#1a1a1a', marginBottom: 10 }}>Mes chantiers</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {[
@@ -173,46 +217,48 @@ export default function Home() {
           const isAlert = isDelayAlert(p)
 
           return (
-            <div key={p.id} onClick={() => navigate('/chantier/' + p.id)} style={{ background: '#fff', border: '0.5px solid ' + (isAlert ? '#E24B4A' : '#e0dfd7'), borderRadius: 12, padding: '12px 14px', cursor: 'pointer' }}>
-              {isAlert && (
-                <div style={{ background: '#FCEBEB', borderRadius: 6, padding: '5px 10px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#E24B4A', flexShrink: 0 }}></div>
-                  <span style={{ fontSize: 11, color: '#A32D2D', fontWeight: 500 }}>Dépassement de délai — cliquer pour modifier</span>
+            <div key={p.id} onClick={() => navigate('/chantier/' + p.id)} style={{ background: '#fff', border: '0.5px solid ' + (isAlert ? '#E24B4A' : '#e0dfd7'), borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+              {p.cover_image_url && (
+                <div style={{ height: 100, overflow: 'hidden' }}>
+                  <img src={p.cover_image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               )}
-              {p.cover_image_url && (
-  <div style={{ height: 100, borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
-    <img src={p.cover_image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-  </div>
-)}
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                <div style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: isAlert ? '#FCEBEB' : p.delay_weeks > 0 ? '#FAEEDA' : '#EAF3DE', color: isAlert ? '#A32D2D' : p.delay_weeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>
-                  {isAlert ? 'Délai dépassé' : p.delay_weeks > 0 ? 'Retard' : 'En cours'}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Budget prévu HT</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{p.budget_ht ? p.budget_ht.toLocaleString('fr-FR') + ' EUR' : '-'}</div>
-                </div>
-                <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Débloqué</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: fillColor }}>{pct}%</div>
-                  <div style={{ height: 3, background: '#e0dfd7', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: pct + '%', background: fillColor, borderRadius: 2 }}></div>
+              <div style={{ padding: '12px 14px' }}>
+                {isAlert && (
+                  <div style={{ background: '#FCEBEB', borderRadius: 6, padding: '5px 10px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#E24B4A', flexShrink: 0 }}></div>
+                    <span style={{ fontSize: 11, color: '#A32D2D', fontWeight: 500 }}>Dépassement de délai</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: isAlert ? '#FCEBEB' : p.delay_weeks > 0 ? '#FAEEDA' : '#EAF3DE', color: isAlert ? '#A32D2D' : p.delay_weeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>
+                    {isAlert ? 'Délai dépassé' : p.delay_weeks > 0 ? 'Retard' : 'En cours'}
                   </div>
                 </div>
-                <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Fin prévue</div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>
-                    {endDate ? endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Budget prévu HT</div>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{p.budget_ht ? p.budget_ht.toLocaleString('fr-FR') + ' EUR' : '-'}</div>
                   </div>
-                </div>
-                <div style={{ background: isAlert ? '#FCEBEB' : '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Décompte</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: isAlert ? '#A32D2D' : '#1a1a1a' }}>
-                    {isAlert ? 'Délai dépassé' : joursOuvrables !== null ? 'J-' + joursOuvrables + ' jo' : '-'}
+                  <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Débloqué</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: fillColor }}>{pct}%</div>
+                    <div style={{ height: 3, background: '#e0dfd7', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: pct + '%', background: fillColor, borderRadius: 2 }}></div>
+                    </div>
+                  </div>
+                  <div style={{ background: '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Fin prévue</div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>
+                      {endDate ? endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                    </div>
+                  </div>
+                  <div style={{ background: isAlert ? '#FCEBEB' : '#f5f4f0', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Décompte</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: isAlert ? '#A32D2D' : '#1a1a1a' }}>
+                      {isAlert ? 'Délai dépassé' : joursOuvrables !== null ? 'J-' + joursOuvrables + ' jo' : '-'}
+                    </div>
                   </div>
                 </div>
               </div>

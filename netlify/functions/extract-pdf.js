@@ -6,29 +6,35 @@ exports.handler = async function(event) {
   }
 
   try {
-    const { base64, type } = JSON.parse(event.body)
+    const { base64, type, prompt: customPrompt } = JSON.parse(event.body)
 
-    const prompt = type === 'invoice'
-      ? `Tu es un expert en comptabilite. Analyse cette facture PDF et extrait les informations suivantes en JSON uniquement, sans texte avant ou apres :
+    let prompt = customPrompt
+
+    if (!prompt) {
+      prompt = type === 'invoice'
+        ? `Tu es un expert en comptabilité. Analyse cette facture PDF et extrait les informations suivantes en JSON uniquement, sans texte avant ou après :
 {
-  "invoice_number": "numero de facture ou null",
-  "situation_number": "numero de situation ou null (nombre entier)",
-  "amount_ht": "montant hors taxes en nombre decimal ou null",
-  "amount_ttc": "montant toutes taxes comprises en nombre decimal ou null",
+  "invoice_number": "numéro de facture ou null",
+  "situation_number": "numéro de situation ou null (nombre entier)",
+  "amount_ht": "montant hors taxes en nombre décimal ou null",
+  "amount_ttc": "montant toutes taxes comprises en nombre décimal ou null",
   "invoice_date": "date au format YYYY-MM-DD ou null",
-  "company_name": "nom de l entreprise emettrice ou null"
+  "company_name": "nom de l'entreprise émettrice ou null"
 }
-Reponds UNIQUEMENT avec le JSON, rien d autre.`
-      : `Tu es un expert en assurance construction. Analyse cette attestation d assurance PDF et extrait les informations suivantes en JSON uniquement, sans texte avant ou apres :
+Réponds UNIQUEMENT avec le JSON, rien d'autre.`
+        : type === 'insurance'
+        ? `Tu es un expert en assurance construction. Analyse cette attestation d'assurance PDF et extrait les informations suivantes en JSON uniquement, sans texte avant ou après :
 {
-  "type": "type d assurance : decennale, rc_pro ou autre",
-  "insurer": "nom de l assureur ou null",
-  "policy_number": "numero de police ou null",
-  "activities_covered": "activites couvertes ou null",
-  "start_date": "date de debut au format YYYY-MM-DD ou null",
-  "end_date": "date de fin ou echeance au format YYYY-MM-DD ou null"
+  "type": "type d'assurance : decennale, rc_pro ou autre",
+  "insurer": "nom de l'assureur ou null",
+  "policy_number": "numéro de police ou null",
+  "activities_covered": "activités couvertes ou null",
+  "start_date": "date de début au format YYYY-MM-DD ou null",
+  "end_date": "date de fin ou échéance au format YYYY-MM-DD ou null"
 }
-Reponds UNIQUEMENT avec le JSON, rien d autre.`
+Réponds UNIQUEMENT avec le JSON, rien d'autre.`
+        : `Analyse ce document et extrait les informations pertinentes en JSON.`
+    }
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 

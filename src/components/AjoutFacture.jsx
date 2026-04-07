@@ -10,7 +10,7 @@ const TVA_OPTIONS = [
   { label: '0% — Exonéré / Auto-liquidation', value: 0 },
 ]
 
-export default function AjoutFacture({ projectId, lots, companies, defaultLotId, onSuccess }) {
+export default function AjoutFacture({ projectId, lots, companies, defaultLotId, quotes = [], onSuccess }) {
   const [step, setStep] = useState('upload')
   const [extracted, setExtracted] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -20,6 +20,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
   const [matchedLotId, setMatchedLotId] = useState(defaultLotId || '')
   const [matchedCompanyId, setMatchedCompanyId] = useState('')
   const [invoiceType, setInvoiceType] = useState('base')
+  const [selectedQuoteId, setSelectedQuoteId] = useState('')
   const [tvaRate, setTvaRate] = useState(8.5)
   const [manualForm, setManualForm] = useState({
     invoice_number: '', situation_number: '', amount_ht: '', amount_ttc: '', invoice_date: '', company_name: ''
@@ -103,6 +104,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
         ai_extracted: !!data._filePath,
         status: 'recue',
         invoice_type: invoiceType,
+        quote_id: selectedQuoteId || null,
       }])
 
       await supabase.from('documents').insert([{
@@ -233,6 +235,18 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
               <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Entreprise emettrice</div>
               <input value={manualForm.company_name} onChange={e => setManualField('company_name', e.target.value)} placeholder="Nom de l'entreprise" style={inp} />
             </div>
+            {quotes.filter(q => q.status === 'accepte').length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Relier à un devis</div>
+                <select value={selectedQuoteId} onChange={e => setSelectedQuoteId(e.target.value)}
+                  style={{ fontSize: 13, padding: '7px 10px', borderRadius: 7, border: '0.5px solid #e0dfd7', background: '#fff', color: '#1a1a1a', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}>
+                  <option value=''>-- Sans devis associé --</option>
+                  {quotes.filter(q => q.status === 'accepte').map(q => (
+                    <option key={q.id} value={q.id}>{q.quote_number || 'Devis'} · {q.amount_ht?.toLocaleString('fr-FR')} EUR</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <LotSelector />
           </div>
           <div style={{ padding: '10px 14px', borderTop: '0.5px solid #e0dfd7', display: 'flex', gap: 8 }}>
