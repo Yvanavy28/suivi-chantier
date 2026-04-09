@@ -14,6 +14,7 @@ export default function Reglages() {
     phone: '',
     email: '',
     avatar_url: '',
+    logo_size: 52,
   })
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function Reglages() {
             phone: data.phone || '',
             email: data.email || session.user.email || '',
             avatar_url: data.avatar_url || '',
+            logo_size: data.logo_size || 52,
           })
         }
       }
@@ -61,6 +63,7 @@ export default function Reglages() {
       company_name: form.company_name,
       phone: form.phone,
       avatar_url: form.avatar_url,
+      logo_size: form.logo_size,
     }).eq('id', session.user.id)
     setSaving(false)
     setSuccess(true)
@@ -108,7 +111,29 @@ export default function Reglages() {
 
         {success && (
           <div style={{ background: '#EAF3DE', color: '#3B6D11', fontSize: 13, padding: '8px 12px', borderRadius: 8, textAlign: 'center' }}>
-            Réglages enregistrés
+            Réglages enregistrés ✓
+          </div>
+        )}
+
+        {form.avatar_url && (
+          <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>Taille du logo sur l'accueil</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: '#aaa' }}>S</span>
+              <input
+                type="range"
+                min="30"
+                max="120"
+                value={form.logo_size}
+                onChange={e => setField('logo_size', parseInt(e.target.value))}
+                style={{ flex: 1, accentColor: '#1a1a1a' }}
+              />
+              <span style={{ fontSize: 11, color: '#aaa' }}>XL</span>
+            </div>
+            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', background: '#f5f4f0', borderRadius: 8, padding: 10 }}>
+              <img src={form.avatar_url} alt="preview" style={{ height: form.logo_size, maxWidth: 240, objectFit: 'contain', borderRadius: 6 }} />
+            </div>
+            <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 6 }}>Aperçu · {form.logo_size}px</div>
           </div>
         )}
 
@@ -146,18 +171,15 @@ export default function Reglages() {
           </div>
         </div>
 
-        <button onClick={handleLogout} style={{ width: '100%', padding: 12, borderRadius: 10, border: '0.5px solid #E24B4A', background: 'none', color: '#E24B4A', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', marginTop: 8 }}>
+        <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', marginTop: 8 }}>
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
+        </button>
+
+        <button onClick={handleLogout} style={{ width: '100%', padding: 12, borderRadius: 10, border: '0.5px solid #E24B4A', background: 'none', color: '#E24B4A', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
           Se déconnecter
         </button>
 
       </div>
-
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#fff', borderTop: '0.5px solid #e0dfd7', padding: '12px 14px 24px' }}>
-        <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
-      </div>
-
     </div>
   )
 }

@@ -167,7 +167,7 @@ export default function Home() {
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="logo" style={{ height: 52, maxWidth: 200, objectFit: 'contain', borderRadius: 8 }} />
+            <img src={profile.avatar_url} alt="logo" style={{ height: profile.logo_size || 52, maxWidth: 240, objectFit: 'contain', borderRadius: 8 }} />
           ) : (
             <div style={{ fontSize: 22, fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.3px' }}>{getDisplayName()}</div>
           )}
