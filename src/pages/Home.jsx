@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
+import NotificationBell from '../components/NotificationBell'
 import { useRole } from '../lib/useRole'
 
 function getOuvrablesDays(start, end) {
@@ -133,6 +134,8 @@ export default function Home() {
           <div style={{ fontSize: 12, color: '#aaa' }}>
             {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} · {timeStr}
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <NotificationBell />
           <div style={{ position: 'relative' }} ref={menuRef}>
             <div onClick={() => setShowMenu(!showMenu)} style={{ cursor: 'pointer' }}>
               {profile?.avatar_url ? (
@@ -164,6 +167,7 @@ export default function Home() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
 
