@@ -1,10 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useRole } from '../lib/useRole'
 
 export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAdmin } = useRole()
 
-  const tabs = [
+  const allTabs = [
     {
       path: '/',
       label: 'Accueil',
@@ -41,6 +43,8 @@ export default function Navbar() {
       )
     }
   ]
+
+  const tabs = isAdmin ? allTabs : allTabs.filter(t => t.path !== '/nouveau-chantier')
 
   const isActive = (path) => {
     if (path === '/') return location.pathname === '/'

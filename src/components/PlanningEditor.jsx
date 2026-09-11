@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function PlanningEditor({ project, onUpdate, projectId }) {
+export default function PlanningEditor({ project, onUpdate, projectId, readOnly = false }) {
   const [editing, setEditing] = useState(false)
   const [calibrating, setCalibrating] = useState(false)
   const [form, setForm] = useState({
@@ -86,9 +86,11 @@ export default function PlanningEditor({ project, onUpdate, projectId }) {
               <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: isAlert ? '#FCEBEB' : form.delay_weeks > 0 ? '#FAEEDA' : '#EAF3DE', color: isAlert ? '#A32D2D' : form.delay_weeks > 0 ? '#854F0B' : '#3B6D11', fontWeight: 500 }}>
                 {isAlert ? 'Délai dépassé' : form.delay_weeks > 0 ? 'Retard' : 'En cours'}
               </span>
-              <div onClick={() => setEditing(true)} style={{ fontSize: 11, color: '#185FA5', cursor: 'pointer', padding: '3px 8px', border: '0.5px solid #185FA5', borderRadius: 6, fontWeight: 500 }}>
-                Modifier
-              </div>
+              {!readOnly && (
+                <div onClick={() => setEditing(true)} style={{ fontSize: 11, color: '#185FA5', cursor: 'pointer', padding: '3px 8px', border: '0.5px solid #185FA5', borderRadius: 6, fontWeight: 500 }}>
+                  Modifier
+                </div>
+              )}
             </div>
           </div>
 
@@ -117,7 +119,9 @@ export default function PlanningEditor({ project, onUpdate, projectId }) {
             <div style={{ borderTop: '0.5px solid #e0dfd7', paddingTop: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div style={{ fontSize: 11, color: '#888' }}>Avancement calculé et prévisionnel</div>
-                <div onClick={() => setCalibrating(true)} style={{ fontSize: 11, color: '#185FA5', cursor: 'pointer', padding: '2px 7px', border: '0.5px solid #185FA5', borderRadius: 6 }}>Calibrer</div>
+                {!readOnly && (
+                  <div onClick={() => setCalibrating(true)} style={{ fontSize: 11, color: '#185FA5', cursor: 'pointer', padding: '2px 7px', border: '0.5px solid #185FA5', borderRadius: 6 }}>Calibrer</div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                 <div style={{ flex: 1 }}>

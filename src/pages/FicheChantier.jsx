@@ -6,10 +6,12 @@ import AjoutFacture from '../components/AjoutFacture'
 import AjoutDocument from '../components/AjoutDocument'
 import PlanningEditor from '../components/PlanningEditor'
 import CoverImageUpload from '../components/CoverImageUpload'
+import { useRole } from '../lib/useRole'
 
 export default function FicheChantier() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
   const [tab, setTab] = useState(0)
   const [project, setProject] = useState(null)
   const [lots, setLots] = useState([])
@@ -121,7 +123,9 @@ export default function FicheChantier() {
             <div style={{ fontSize: 11, color: '#888' }}>{project.ref_number}{project.address ? ' · ' + project.address : ''}</div>
           </div>
         </div>
-        <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        {isAdmin && (
+          <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        )}
       </div>
 
       <div style={{ display: 'flex', background: '#fff', borderBottom: '0.5px solid #e0dfd7', overflowX: 'auto', scrollbarWidth: 'none' }}>
@@ -177,12 +181,14 @@ export default function FicheChantier() {
               </div>
             )}
 
-            <div onClick={() => setShowAjoutFacture(!showAjoutFacture)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
-              {showAjoutFacture ? 'Fermer' : '+ Ajouter une facture'}
-            </div>
+            {isAdmin && (
+              <div onClick={() => setShowAjoutFacture(!showAjoutFacture)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
+                {showAjoutFacture ? 'Fermer' : '+ Ajouter une facture'}
+              </div>
+            )}
 
-            {showAjoutFacture && (
+            {showAjoutFacture && isAdmin && (
               <AjoutFacture
                 projectId={id}
                 lots={lots}
@@ -195,6 +201,7 @@ export default function FicheChantier() {
             <PlanningEditor
               project={project}
               projectId={id}
+              readOnly={!isAdmin}
               onUpdate={(updated) => {
                 setProject(prev => ({ ...prev, ...updated }))
                 setDelayWeeks(updated.delay_weeks || 0)
@@ -256,7 +263,7 @@ export default function FicheChantier() {
 
         {tab === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AjoutDocument projectId={id} onSuccess={() => loadData()} />
+            {isAdmin && <AjoutDocument projectId={id} onSuccess={() => loadData()} />}
             {docCategories.map(cat => {
               const docs = getDocsByCategory(cat.key)
               if (docs.length === 0) return null

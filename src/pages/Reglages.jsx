@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useRole } from '../lib/useRole'
 
 export default function Reglages() {
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -16,6 +18,16 @@ export default function Reglages() {
     avatar_url: '',
     logo_size: 52,
   })
+  const [team, setTeam] = useState([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('lecture_seule')
+  const [teamError, setTeamError] = useState('')
+  const [inviting, setInviting] = useState(false)
+
+  async function loadTeam() {
+    const { data } = await supabase.from('team_members').select('*').order('created_at')
+    if (data) setTeam(data)
+  }
 
   useEffect(() => {
     async function load() {
@@ -34,9 +46,40 @@ export default function Reglages() {
           })
         }
       }
+      const { data: members } = await supabase.from('team_members').select('*').order('created_at')
+      if (members) setTeam(members)
     }
     load()
   }, [])
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) return
+    setInviting(true)
+    setTeamError('')
+    const { error } = await supabase.from('team_members').insert([{
+      email: inviteEmail.trim().toLowerCase(),
+      role: inviteRole,
+      status: 'pending',
+      invited_by: session?.user?.id || null,
+    }])
+    if (error) {
+      setTeamError(error.message.includes('duplicate') ? 'Cet email est déjà invité ou membre.' : error.message)
+    } else {
+      setInviteEmail('')
+      loadTeam()
+    }
+    setInviting(false)
+  }
+
+  async function handleRoleChange(memberId, role) {
+    await supabase.from('team_members').update({ role }).eq('id', memberId)
+    loadTeam()
+  }
+
+  async function handleRemove(memberId) {
+    await supabase.from('team_members').delete().eq('id', memberId)
+    loadTeam()
+  }
 
   function setField(key, val) { setForm(f => ({ ...f, [key]: val })) }
 
@@ -157,6 +200,52 @@ export default function Reglages() {
             <input value={form.email} disabled style={{ ...inp, background: '#f5f4f0', color: '#aaa' }} />
           </div>
         </div>
+
+        <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Équipe</div>
+
+        <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, overflow: 'hidden' }}>
+          {team.length === 0 && (
+            <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa' }}>Aucun membre pour le moment.</div>
+          )}
+          {team.map((m, i) => (
+            <div key={m.id} style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderBottom: i < team.length - 1 ? '0.5px solid #f0efea' : 'none' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.email}</div>
+                <div style={{ fontSize: 11, color: '#aaa' }}>{m.status === 'pending' ? 'Invitation en attente' : 'Actif'}</div>
+              </div>
+              {isAdmin ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <select value={m.role} onChange={e => handleRoleChange(m.id, e.target.value)}
+                    style={{ fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '0.5px solid #e0dfd7', background: '#fff', fontFamily: 'inherit' }}>
+                    <option value="admin">Admin</option>
+                    <option value="lecture_seule">Lecture seule</option>
+                  </select>
+                  <div onClick={() => handleRemove(m.id)} style={{ fontSize: 11, color: '#E24B4A', cursor: 'pointer', padding: '4px 6px' }}>Retirer</div>
+                </div>
+              ) : (
+                <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: m.role === 'admin' ? '#EAF3DE' : '#f5f4f0', color: m.role === 'admin' ? '#3B6D11' : '#888', fontWeight: 500, flexShrink: 0 }}>
+                  {m.role === 'admin' ? 'Admin' : 'Lecture seule'}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {isAdmin && (
+          <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 12, color: '#666' }}>Inviter un collaborateur</div>
+            {teamError && <div style={{ fontSize: 12, color: '#A32D2D' }}>{teamError}</div>}
+            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@exemple.com" type="email" style={inp} />
+            <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={inp}>
+              <option value="lecture_seule">Lecture seule</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()} style={{ padding: '9px', borderRadius: 8, border: 'none', background: '#1a1a1a', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {inviting ? 'Envoi...' : 'Inviter'}
+            </button>
+            <div style={{ fontSize: 11, color: '#aaa' }}>La personne invitée doit se connecter avec ce même email via GitHub pour activer son accès.</div>
+          </div>
+        )}
 
         <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Compte</div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
+import { useRole } from '../lib/useRole'
 
 function getOuvrablesDays(start, end) {
   let count = 0
@@ -33,6 +34,7 @@ function getJoursOuvrables(endDate) {
 }
 
 export default function Home() {
+  const { isAdmin } = useRole()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
@@ -205,7 +207,7 @@ export default function Home() {
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>
             Aucun chantier {activeTab === 'en_cours' ? 'en cours' : activeTab === 'termine' ? 'terminé' : 'à venir'}.<br />
-            {activeTab === 'en_cours' && <span onClick={() => navigate('/nouveau-chantier')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Créer un chantier</span>}
+            {activeTab === 'en_cours' && isAdmin && <span onClick={() => navigate('/nouveau-chantier')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Créer un chantier</span>}
           </div>
         )}
 
