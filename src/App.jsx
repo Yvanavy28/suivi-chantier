@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { useRole } from './lib/useRole'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import NouveauChantier from './pages/NouveauChantier'
-import FicheChantier from './pages/FicheChantier'
-import ModifierChantier from './pages/ModifierChantier'
-import Entreprises from './pages/Entreprises'
-import NouvelleEntreprise from './pages/NouvelleEntreprise'
-import FicheEntreprise from './pages/FicheEntreprise'
-import ModifierEntreprise from './pages/ModifierEntreprise'
-import FicheLot from './pages/FicheLot'
-import Reglages from './pages/Reglages'
 import Navbar from './components/Navbar'
+
+const NouveauChantier = lazy(() => import('./pages/NouveauChantier'))
+const FicheChantier = lazy(() => import('./pages/FicheChantier'))
+const ModifierChantier = lazy(() => import('./pages/ModifierChantier'))
+const Entreprises = lazy(() => import('./pages/Entreprises'))
+const NouvelleEntreprise = lazy(() => import('./pages/NouvelleEntreprise'))
+const FicheEntreprise = lazy(() => import('./pages/FicheEntreprise'))
+const ModifierEntreprise = lazy(() => import('./pages/ModifierEntreprise'))
+const FicheLot = lazy(() => import('./pages/FicheLot'))
+const Reglages = lazy(() => import('./pages/Reglages'))
 
 function RequireAdmin({ children }) {
   const { isAdmin, loading } = useRole()
@@ -30,18 +31,20 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/nouveau-chantier" element={<RequireAdmin><NouveauChantier /></RequireAdmin>} />
-        <Route path="/chantier/:id" element={<FicheChantier />} />
-        <Route path="/chantier/:id/modifier" element={<RequireAdmin><ModifierChantier /></RequireAdmin>} />
-        <Route path="/chantier/:projectId/lot/:lotId" element={<FicheLot />} />
-        <Route path="/entreprises" element={<Entreprises />} />
-        <Route path="/nouvelle-entreprise" element={<RequireAdmin><NouvelleEntreprise /></RequireAdmin>} />
-        <Route path="/entreprise/:id" element={<FicheEntreprise />} />
-        <Route path="/entreprise/:id/modifier" element={<RequireAdmin><ModifierEntreprise /></RequireAdmin>} />
-        <Route path="/reglages" element={<Reglages />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/nouveau-chantier" element={<RequireAdmin><NouveauChantier /></RequireAdmin>} />
+          <Route path="/chantier/:id" element={<FicheChantier />} />
+          <Route path="/chantier/:id/modifier" element={<RequireAdmin><ModifierChantier /></RequireAdmin>} />
+          <Route path="/chantier/:projectId/lot/:lotId" element={<FicheLot />} />
+          <Route path="/entreprises" element={<Entreprises />} />
+          <Route path="/nouvelle-entreprise" element={<RequireAdmin><NouvelleEntreprise /></RequireAdmin>} />
+          <Route path="/entreprise/:id" element={<FicheEntreprise />} />
+          <Route path="/entreprise/:id/modifier" element={<RequireAdmin><ModifierEntreprise /></RequireAdmin>} />
+          <Route path="/reglages" element={<Reglages />} />
+        </Routes>
+      </Suspense>
       {!hideNavbar && <Navbar />}
     </>
   )
