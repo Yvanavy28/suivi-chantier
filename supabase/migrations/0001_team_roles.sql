@@ -40,11 +40,17 @@ as $$
   );
 $$;
 
--- Tout utilisateur connecté peut lire la liste de l'équipe (pour afficher les
--- rôles et savoir qui est admin).
+-- Un utilisateur connecté ne peut lire que sa propre ligne (nécessaire pour
+-- useRole côté client) ; seuls les admins peuvent lire la liste complète de
+-- l'équipe (emails, invitations en attente, etc.).
+-- Note : `using (true)` exposerait les emails de tous les membres -- y
+-- compris les invitations "pending" jamais consenties -- à n'importe quel
+-- compte GitHub qui se connecte (le trigger ci-dessous active l'accès à
+-- toute connexion, même non invitée). On restreint donc explicitement.
 drop policy if exists "team_members_select_authenticated" on public.team_members;
-create policy "team_members_select_authenticated" on public.team_members
-  for select to authenticated using (true);
+create policy "team_members_select_self_or_admin" on public.team_members
+  for select to authenticated
+  using (user_id = auth.uid() or public.is_admin());
 
 -- Seuls les admins peuvent inviter / modifier / retirer un membre.
 drop policy if exists "team_members_admin_write" on public.team_members;
