@@ -23,8 +23,6 @@ export default function FicheLot() {
   const [quoteForm, setQuoteForm] = useState({ quote_number: '', quote_date: '', amount_ht: '', tva_rate: '20', amount_ttc: '' })
   const [savingQuote, setSavingQuote] = useState(false)
 
-  useEffect(() => { loadData() }, [lotId])
-
   async function loadData() {
     const [{ data: l }, { data: inv }, { data: q }, { data: ls }, { data: cs }, { data: ldocs }] = await Promise.all([
       supabase.from('project_lots').select('*, lots(*), companies(*)').eq('id', lotId).single(),
@@ -42,6 +40,9 @@ export default function FicheLot() {
     if (ldocs) setLotDocuments(ldocs)
     setLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData() }, [lotId])
 
   function getTotalDevisTTC() {
     return quotes.filter(q => q.status === 'accepte').reduce((s, q) => s + (q.amount_ttc || q.amount_ht || 0), 0)
@@ -539,6 +540,3 @@ export default function FicheLot() {
 }
 
 const inp = { fontSize: 13, padding: '8px 10px', borderRadius: 8, border: '0.5px solid #e0dfd7', background: '#fff', color: '#1a1a1a', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }
-const card = { background: '#f5f4f0', borderRadius: 8, padding: '10px 12px' }
-const cardLabel = { fontSize: 11, color: '#888', marginBottom: 4 }
-const cardVal = { fontSize: 16, fontWeight: 500, color: '#1a1a1a' }

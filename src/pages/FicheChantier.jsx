@@ -19,8 +19,6 @@ export default function FicheChantier() {
   const [delayWeeks, setDelayWeeks] = useState(0)
   const [showAjoutFacture, setShowAjoutFacture] = useState(false)
 
-  useEffect(() => { loadData() }, [id])
-
   async function loadData() {
     const [{ data: p }, { data: pl }, { data: cs }, { data: docs }] = await Promise.all([
       supabase.from('projects').select('*, clients(*)').eq('id', id).single(),
@@ -34,6 +32,9 @@ export default function FicheChantier() {
     if (docs) setDocuments(docs)
     setLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData() }, [id])
 
   function getBudgetPct() {
     if (!project?.budget_ht || project.budget_ht === 0) return 0

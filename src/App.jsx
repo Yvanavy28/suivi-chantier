@@ -16,7 +16,7 @@ import Navbar from './components/Navbar'
 
 function AppContent() {
   const location = useLocation()
-  const hideNavbar = ['/', '/nouveau-chantier', '/nouvelle-entreprise'].includes(location.pathname) ||
+  const hideNavbar = ['/', '/entreprises', '/nouveau-chantier', '/nouvelle-entreprise'].includes(location.pathname) ||
     location.pathname.includes('/modifier') ||
     location.pathname.includes('/reglages')
 
@@ -34,7 +34,7 @@ function AppContent() {
         <Route path="/entreprise/:id/modifier" element={<ModifierEntreprise />} />
         <Route path="/reglages" element={<Reglages />} />
       </Routes>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
     </>
   )
 }

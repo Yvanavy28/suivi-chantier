@@ -112,7 +112,7 @@ Réponds UNIQUEMENT avec le JSON, rien d'autre.`
           project_id: projectId,
           company_id: companyId || null,
           category: 'devis',
-          name: extracted.quote_number ? 'Devis ' + extracted.quote_number : file?.name || 'Devis',
+          name: extracted.quote_number ? 'Devis ' + extracted.quote_number : fileName || 'Devis',
           file_path: extracted._filePath || '',
           ai_extracted: true,
         }])

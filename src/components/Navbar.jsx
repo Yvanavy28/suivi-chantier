@@ -19,7 +19,7 @@ export default function Navbar() {
     {
       path: '/nouveau-chantier',
       label: 'Nouveau',
-      icon: (active) => (
+      icon: () => (
         <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <line x1="9" y1="3" x2="9" y2="15" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
