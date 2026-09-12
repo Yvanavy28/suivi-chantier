@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import ExtracteurIA from '../components/ExtracteurIA'
+import { useRole } from '../lib/useRole'
 
 export default function FicheEntreprise() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
   const [tab, setTab] = useState(0)
   const [company, setCompany] = useState(null)
   const [insurances, setInsurances] = useState([])
@@ -78,7 +80,9 @@ export default function FicheEntreprise() {
             <div style={{ fontSize: 11, color: '#888' }}>{company.trade || 'Entreprise'}</div>
           </div>
         </div>
-        <div onClick={() => navigate('/entreprise/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        {isAdmin && (
+          <div onClick={() => navigate('/entreprise/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        )}
       </div>
 
       <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '0.5px solid #e0dfd7', display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -117,14 +121,18 @@ export default function FicheEntreprise() {
 
         {tab === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <ExtracteurIA
-              type="insurance"
-              companyId={id}
-              onSuccess={() => window.location.reload()}
-            />
-            <div onClick={() => setShowAddIns(!showAddIns)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#888', border: '0.5px dashed #e0dfd7', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
-              + Saisir manuellement
-            </div>
+            {isAdmin && (
+              <>
+                <ExtracteurIA
+                  type="insurance"
+                  companyId={id}
+                  onSuccess={() => window.location.reload()}
+                />
+                <div onClick={() => setShowAddIns(!showAddIns)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#888', border: '0.5px dashed #e0dfd7', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
+                  + Saisir manuellement
+                </div>
+              </>
+            )}
 
             {showAddIns && (
               <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>

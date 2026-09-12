@@ -6,10 +6,14 @@ import AjoutFacture from '../components/AjoutFacture'
 import AjoutDocument from '../components/AjoutDocument'
 import PlanningEditor from '../components/PlanningEditor'
 import CoverImageUpload from '../components/CoverImageUpload'
+import AjoutVisite from '../components/AjoutVisite'
+import { useRole } from '../lib/useRole'
+import { generateVisitPdf } from '../lib/visitPdf'
 
 export default function FicheChantier() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
   const [tab, setTab] = useState(0)
   const [project, setProject] = useState(null)
   const [lots, setLots] = useState([])
@@ -18,22 +22,31 @@ export default function FicheChantier() {
   const [loading, setLoading] = useState(true)
   const [delayWeeks, setDelayWeeks] = useState(0)
   const [showAjoutFacture, setShowAjoutFacture] = useState(false)
-
-  useEffect(() => { loadData() }, [id])
+  const [visits, setVisits] = useState([])
+  const [visitReserves, setVisitReserves] = useState([])
+  const [showAjoutVisite, setShowAjoutVisite] = useState(false)
+  const [expandedVisitId, setExpandedVisitId] = useState(null)
 
   async function loadData() {
-    const [{ data: p }, { data: pl }, { data: cs }, { data: docs }] = await Promise.all([
+    const [{ data: p }, { data: pl }, { data: cs }, { data: docs }, { data: vis }, { data: res }] = await Promise.all([
       supabase.from('projects').select('*, clients(*)').eq('id', id).single(),
       supabase.from('project_lots').select('*, lots(*), companies(*)').eq('project_id', id),
       supabase.from('companies').select('*').order('name'),
       supabase.from('documents').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+      supabase.from('visits').select('*').eq('project_id', id).order('visit_date', { ascending: false }),
+      supabase.from('visit_reserves').select('*, visits!inner(project_id)').eq('visits.project_id', id),
     ])
     if (p) { setProject(p); setDelayWeeks(p.delay_weeks || 0) }
     if (pl) setLots(pl)
     if (cs) setCompanies(cs)
     if (docs) setDocuments(docs)
+    if (vis) setVisits(vis)
+    if (res) setVisitReserves(res)
     setLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData() }, [id])
 
   function getBudgetPct() {
     if (!project?.budget_ht || project.budget_ht === 0) return 0
@@ -97,15 +110,37 @@ export default function FicheChantier() {
   const pct = getBudgetPct()
   const fillColor = pct > 80 ? '#E24B4A' : pct > 50 ? '#EF9F27' : '#1D9E75'
   const totalExtra = getTotalExtra()
-  const tabs = ['Synthese', 'Lots', 'Planning', 'Alertes', 'Documents', 'Infos']
+  const tabs = ['Synthese', 'Lots', 'Planning', 'Alertes', 'Documents', 'Infos', 'Visites']
   const docCategories = [
     { key: 'contrats', label: 'Contrats' },
     { key: 'plans', label: 'Plans' },
     { key: 'pv_reunion', label: 'PV de reunion' },
     { key: 'factures', label: 'Factures' },
     { key: 'devis', label: 'Devis' },
+    { key: 'visite', label: 'Visites' },
     { key: 'autre', label: 'Autre' },
   ]
+
+  function getReservesForVisit(visitId) {
+    return visitReserves.filter(r => r.visit_id === visitId)
+  }
+
+  function getPhotosForVisit(visitId) {
+    return documents.filter(d => d.visit_id === visitId)
+  }
+
+  async function toggleReserveStatus(reserve) {
+    const newStatus = reserve.status === 'resolu' ? 'ouvert' : 'resolu'
+    await supabase.from('visit_reserves').update({
+      status: newStatus,
+      resolved_at: newStatus === 'resolu' ? new Date().toISOString() : null,
+    }).eq('id', reserve.id)
+    loadData()
+  }
+
+  function downloadVisitPdf(visit) {
+    generateVisitPdf({ projectName: project.name, visit, reserves: getReservesForVisit(visit.id) })
+  }
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f4f0' }}>
@@ -120,7 +155,9 @@ export default function FicheChantier() {
             <div style={{ fontSize: 11, color: '#888' }}>{project.ref_number}{project.address ? ' · ' + project.address : ''}</div>
           </div>
         </div>
-        <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        {isAdmin && (
+          <div onClick={() => navigate('/chantier/' + id + '/modifier')} style={{ fontSize: 12, color: '#1a1a1a', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 500 }}>Modifier</div>
+        )}
       </div>
 
       <div style={{ display: 'flex', background: '#fff', borderBottom: '0.5px solid #e0dfd7', overflowX: 'auto', scrollbarWidth: 'none' }}>
@@ -176,12 +213,14 @@ export default function FicheChantier() {
               </div>
             )}
 
-            <div onClick={() => setShowAjoutFacture(!showAjoutFacture)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
-              {showAjoutFacture ? 'Fermer' : '+ Ajouter une facture'}
-            </div>
+            {isAdmin && (
+              <div onClick={() => setShowAjoutFacture(!showAjoutFacture)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#185FA5" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#185FA5" strokeWidth="1"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="#185FA5" strokeWidth="1"/></svg>
+                {showAjoutFacture ? 'Fermer' : '+ Ajouter une facture'}
+              </div>
+            )}
 
-            {showAjoutFacture && (
+            {showAjoutFacture && isAdmin && (
               <AjoutFacture
                 projectId={id}
                 lots={lots}
@@ -194,6 +233,7 @@ export default function FicheChantier() {
             <PlanningEditor
               project={project}
               projectId={id}
+              readOnly={!isAdmin}
               onUpdate={(updated) => {
                 setProject(prev => ({ ...prev, ...updated }))
                 setDelayWeeks(updated.delay_weeks || 0)
@@ -255,7 +295,7 @@ export default function FicheChantier() {
 
         {tab === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AjoutDocument projectId={id} onSuccess={() => loadData()} />
+            {isAdmin && <AjoutDocument projectId={id} onSuccess={() => loadData()} />}
             {docCategories.map(cat => {
               const docs = getDocsByCategory(cat.key)
               if (docs.length === 0) return null
@@ -342,7 +382,107 @@ export default function FicheChantier() {
           </div>
         )}
 
+        {tab === 6 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {isAdmin && (
+              <div onClick={() => setShowAjoutVisite(!showAjoutVisite)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
+                {showAjoutVisite ? 'Fermer' : '+ Nouvelle visite'}
+              </div>
+            )}
+
+            {showAjoutVisite && isAdmin && (
+              <AjoutVisite projectId={id} onSuccess={() => { setShowAjoutVisite(false); loadData() }} />
+            )}
+
+            {visits.length === 0 && !showAjoutVisite && (
+              <div style={{ textAlign: 'center', padding: 30, color: '#aaa', fontSize: 13 }}>Aucune visite enregistrée</div>
+            )}
+
+            {visits.map(v => {
+              const isExpanded = expandedVisitId === v.id
+              const vReserves = getReservesForVisit(v.id)
+              const vPhotos = getPhotosForVisit(v.id)
+              const openReserves = vReserves.filter(r => r.status === 'ouvert').length
+              return (
+                <div key={v.id} style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, overflow: 'hidden' }}>
+                  <div onClick={() => setExpandedVisitId(isExpanded ? null : v.id)} style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{new Date(v.visit_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{v.participants || 'Participants non renseignés'}</div>
+                    </div>
+                    {openReserves > 0 && (
+                      <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 10, background: '#FCEBEB', color: '#A32D2D', fontWeight: 500 }}>{openReserves} réserve{openReserves > 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10, borderTop: '0.5px solid #e0dfd7' }}>
+                      {v.audio_path && <VisitAudioPlayer filePath={v.audio_path} getSignedUrl={getSignedUrl} />}
+
+                      {v.notes && (
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Observations</div>
+                          <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{v.notes}</div>
+                        </div>
+                      )}
+
+                      {vReserves.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Réserves</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {vReserves.map(r => (
+                              <div key={r.id} onClick={() => isAdmin && toggleReserveStatus(r)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: r.status === 'resolu' ? '#EAF3DE' : '#FCEBEB', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: isAdmin ? 'pointer' : 'default' }}>
+                                <span style={{ color: r.status === 'resolu' ? '#3B6D11' : '#A32D2D' }}>{r.description}</span>
+                                <span style={{ fontSize: 10, fontWeight: 500, color: r.status === 'resolu' ? '#3B6D11' : '#A32D2D' }}>{r.status === 'resolu' ? 'Résolu' : 'Ouvert'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {vPhotos.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Photos ({vPhotos.length})</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {vPhotos.map(doc => (
+                              <div key={doc.id} onClick={() => previewDoc(doc.file_path)} style={{ width: 56, height: 56, borderRadius: 6, background: '#f5f4f0', border: '0.5px solid #e0dfd7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10, color: '#888', textAlign: 'center', padding: 4 }}>
+                                {doc.name}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <button onClick={() => downloadVisitPdf(v)} style={{ fontSize: 12, padding: '8px', borderRadius: 8, border: '0.5px solid #e0dfd7', background: '#f5f4f0', cursor: 'pointer', fontFamily: 'inherit', color: '#1a1a1a' }}>
+                        Télécharger le compte-rendu (PDF)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
       </div>
+    </div>
+  )
+}
+
+function VisitAudioPlayer({ filePath, getSignedUrl }) {
+  const [url, setUrl] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    getSignedUrl(filePath).then(u => { if (active) setUrl(u) })
+    return () => { active = false }
+  }, [filePath, getSignedUrl])
+
+  if (!url) return <div style={{ fontSize: 12, color: '#aaa' }}>Chargement de l'enregistrement...</div>
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Enregistrement</div>
+      <audio controls src={url} style={{ width: '100%' }} />
     </div>
   )
 }

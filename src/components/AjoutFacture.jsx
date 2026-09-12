@@ -10,6 +10,34 @@ const TVA_OPTIONS = [
   { label: '0% — Exonéré / Auto-liquidation', value: 0 },
 ]
 
+function TypeSelector({ invoiceType, setInvoiceType }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+      <div onClick={() => setInvoiceType('base')} style={{ padding: '10px 12px', borderRadius: 8, border: '0.5px solid ' + (invoiceType === 'base' ? '#1D9E75' : '#e0dfd7'), background: invoiceType === 'base' ? '#E1F5EE' : '#fff', cursor: 'pointer', textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: invoiceType === 'base' ? '#0F6E56' : '#1a1a1a' }}>Budget de base</div>
+        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Déduit du marché</div>
+      </div>
+      <div onClick={() => setInvoiceType('supplementaire')} style={{ padding: '10px 12px', borderRadius: 8, border: '0.5px solid ' + (invoiceType === 'supplementaire' ? '#EF9F27' : '#e0dfd7'), background: invoiceType === 'supplementaire' ? '#FAEEDA' : '#fff', cursor: 'pointer', textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: invoiceType === 'supplementaire' ? '#854F0B' : '#1a1a1a' }}>Travaux supp.</div>
+        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Hors marché</div>
+      </div>
+    </div>
+  )
+}
+
+function LotSelector({ matchedLotId, setMatchedLotId, setMatchedCompanyId, lots }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Attribuer au lot *</div>
+      <select value={matchedLotId} onChange={e => { setMatchedLotId(e.target.value); const lot = lots.find(l => l.id === e.target.value); if (lot) setMatchedCompanyId(lot.company_id || '') }}
+        style={inp}>
+        <option value="">-- Choisir un lot --</option>
+        {lots.map(l => <option key={l.id} value={l.id}>{l.lots?.name}{l.companies ? ' · ' + l.companies.name : ''}</option>)}
+      </select>
+    </div>
+  )
+}
+
 export default function AjoutFacture({ projectId, lots, companies, defaultLotId, quotes = [], onSuccess }) {
   const [step, setStep] = useState('upload')
   const [extracted, setExtracted] = useState(null)
@@ -143,30 +171,6 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
     setManualForm({ invoice_number: '', situation_number: '', amount_ht: '', amount_ttc: '', invoice_date: '', company_name: '' })
   }
 
-  const TypeSelector = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-      <div onClick={() => setInvoiceType('base')} style={{ padding: '10px 12px', borderRadius: 8, border: '0.5px solid ' + (invoiceType === 'base' ? '#1D9E75' : '#e0dfd7'), background: invoiceType === 'base' ? '#E1F5EE' : '#fff', cursor: 'pointer', textAlign: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: invoiceType === 'base' ? '#0F6E56' : '#1a1a1a' }}>Budget de base</div>
-        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Déduit du marché</div>
-      </div>
-      <div onClick={() => setInvoiceType('supplementaire')} style={{ padding: '10px 12px', borderRadius: 8, border: '0.5px solid ' + (invoiceType === 'supplementaire' ? '#EF9F27' : '#e0dfd7'), background: invoiceType === 'supplementaire' ? '#FAEEDA' : '#fff', cursor: 'pointer', textAlign: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: invoiceType === 'supplementaire' ? '#854F0B' : '#1a1a1a' }}>Travaux supp.</div>
-        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Hors marché</div>
-      </div>
-    </div>
-  )
-
-  const LotSelector = () => (
-    <div>
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>Attribuer au lot *</div>
-      <select value={matchedLotId} onChange={e => { setMatchedLotId(e.target.value); const lot = lots.find(l => l.id === e.target.value); if (lot) setMatchedCompanyId(lot.company_id || '') }}
-        style={inp}>
-        <option value="">-- Choisir un lot --</option>
-        {lots.map(l => <option key={l.id} value={l.id}>{l.lots?.name}{l.companies ? ' · ' + l.companies.name : ''}</option>)}
-      </select>
-    </div>
-  )
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
@@ -176,7 +180,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Type de facture</div>
-            <TypeSelector />
+            <TypeSelector invoiceType={invoiceType} setInvoiceType={setInvoiceType} />
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 20, border: '0.5px dashed #185FA5', borderRadius: 10, cursor: uploading ? 'default' : 'pointer', background: '#fff' }}>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -202,7 +206,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
             </span>
           </div>
           <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <TypeSelector />
+            <TypeSelector invoiceType={invoiceType} setInvoiceType={setInvoiceType} />
 
             <div>
               <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>N° de facture</div>
@@ -247,7 +251,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
                 </select>
               </div>
             )}
-            <LotSelector />
+            <LotSelector matchedLotId={matchedLotId} setMatchedLotId={setMatchedLotId} setMatchedCompanyId={setMatchedCompanyId} lots={lots} />
           </div>
           <div style={{ padding: '10px 14px', borderTop: '0.5px solid #e0dfd7', display: 'flex', gap: 8 }}>
             <button onClick={reset} style={btnSecondary}>Annuler</button>
@@ -267,7 +271,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
             </span>
           </div>
           <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <TypeSelector />
+            <TypeSelector invoiceType={invoiceType} setInvoiceType={setInvoiceType} />
             {extracted._foundCompany && (
               <div style={{ background: '#EAF3DE', border: '0.5px solid #1D9E75', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#3B6D11' }}>
                 Entreprise reconnue : <strong>{extracted._foundCompany.name}</strong>
@@ -287,7 +291,7 @@ export default function AjoutFacture({ projectId, lots, companies, defaultLotId,
                   style={{ ...inp, border: '0.5px solid #1D9E75', background: '#E1F5EE', color: '#085041' }} />
               </div>
             ))}
-            <LotSelector />
+            <LotSelector matchedLotId={matchedLotId} setMatchedLotId={setMatchedLotId} setMatchedCompanyId={setMatchedCompanyId} lots={lots} />
           </div>
           <div style={{ padding: '10px 14px', borderTop: '0.5px solid #e0dfd7', display: 'flex', gap: 8 }}>
             <button onClick={reset} style={btnSecondary}>Annuler</button>

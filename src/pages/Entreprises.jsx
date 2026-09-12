@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
+import { useRole } from '../lib/useRole'
 
 export default function Entreprises() {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
 
   useEffect(() => {
     async function fetch() {
@@ -49,9 +51,11 @@ export default function Entreprises() {
           <div style={{ fontSize: 17, fontWeight: 500 }}>Entreprises</div>
           <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{companies.length} entreprise{companies.length > 1 ? 's' : ''}</div>
         </div>
-        <div onClick={() => navigate('/nouvelle-entreprise')} style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="8" y1="2" x2="8" y2="14" stroke="white" strokeWidth="1.6" strokeLinecap="round"/><line x1="2" y1="8" x2="14" y2="8" stroke="white" strokeWidth="1.6" strokeLinecap="round"/></svg>
-        </div>
+        {isAdmin && (
+          <div onClick={() => navigate('/nouvelle-entreprise')} style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="8" y1="2" x2="8" y2="14" stroke="white" strokeWidth="1.6" strokeLinecap="round"/><line x1="2" y1="8" x2="14" y2="8" stroke="white" strokeWidth="1.6" strokeLinecap="round"/></svg>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '12px 14px 4px' }}>
@@ -68,7 +72,7 @@ export default function Entreprises() {
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>
             {search ? 'Aucun resultat' : 'Aucune entreprise.'}<br />
-            {!search && <span onClick={() => navigate('/nouvelle-entreprise')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Ajouter une entreprise</span>}
+            {!search && isAdmin && <span onClick={() => navigate('/nouvelle-entreprise')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Ajouter une entreprise</span>}
           </div>
         )}
         {filtered.map(c => {

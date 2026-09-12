@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
+import NotificationBell from '../components/NotificationBell'
+import { useRole } from '../lib/useRole'
 
 function getOuvrablesDays(start, end) {
   let count = 0
@@ -33,6 +35,7 @@ function getJoursOuvrables(endDate) {
 }
 
 export default function Home() {
+  const { isAdmin } = useRole()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
@@ -131,6 +134,8 @@ export default function Home() {
           <div style={{ fontSize: 12, color: '#aaa' }}>
             {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} · {timeStr}
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <NotificationBell />
           <div style={{ position: 'relative' }} ref={menuRef}>
             <div onClick={() => setShowMenu(!showMenu)} style={{ cursor: 'pointer' }}>
               {profile?.avatar_url ? (
@@ -162,6 +167,7 @@ export default function Home() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -205,7 +211,7 @@ export default function Home() {
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 13 }}>
             Aucun chantier {activeTab === 'en_cours' ? 'en cours' : activeTab === 'termine' ? 'terminé' : 'à venir'}.<br />
-            {activeTab === 'en_cours' && <span onClick={() => navigate('/nouveau-chantier')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Créer un chantier</span>}
+            {activeTab === 'en_cours' && isAdmin && <span onClick={() => navigate('/nouveau-chantier')} style={{ color: '#1D9E75', cursor: 'pointer' }}>Créer un chantier</span>}
           </div>
         )}
 

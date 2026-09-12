@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase'
 import AjoutFacture from '../components/AjoutFacture'
 import AjoutDocument from '../components/AjoutDocument'
 import ExtracteurDevis from '../components/ExtracteurDevis'
+import { useRole } from '../lib/useRole'
 
 export default function FicheLot() {
   const { projectId, lotId } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useRole()
   const [tab, setTab] = useState(0)
   const [lot, setLot] = useState(null)
   const [invoices, setInvoices] = useState([])
@@ -22,8 +24,6 @@ export default function FicheLot() {
   const [adjustedAmount, setAdjustedAmount] = useState('')
   const [quoteForm, setQuoteForm] = useState({ quote_number: '', quote_date: '', amount_ht: '', tva_rate: '20', amount_ttc: '' })
   const [savingQuote, setSavingQuote] = useState(false)
-
-  useEffect(() => { loadData() }, [lotId])
 
   async function loadData() {
     const [{ data: l }, { data: inv }, { data: q }, { data: ls }, { data: cs }, { data: ldocs }] = await Promise.all([
@@ -42,6 +42,9 @@ export default function FicheLot() {
     if (ldocs) setLotDocuments(ldocs)
     setLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData() }, [lotId])
 
   function getTotalDevisTTC() {
     return quotes.filter(q => q.status === 'accepte').reduce((s, q) => s + (q.amount_ttc || q.amount_ht || 0), 0)
@@ -257,9 +260,11 @@ export default function FicheLot() {
                   {lot.amount_ht_adjusted && <div style={{ fontSize: 11, color: '#EF9F27' }}>Montant ajusté manuellement</div>}
                   {!lot.amount_ht_adjusted && <div style={{ fontSize: 11, color: '#aaa' }}>= somme des devis acceptés</div>}
                 </div>
-                <div onClick={() => { setAdjustedAmount(marcheTTC); setShowAdjust(!showAdjust) }} style={{ fontSize: 11, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
-                  Ajuster
-                </div>
+                {isAdmin && (
+                  <div onClick={() => { setAdjustedAmount(marcheTTC); setShowAdjust(!showAdjust) }} style={{ fontSize: 11, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                    Ajuster
+                  </div>
+                )}
               </div>
               {showAdjust && (
                 <div style={{ padding: '10px 14px', background: '#f5f4f0', display: 'flex', gap: 8, alignItems: 'center', borderBottom: '0.5px solid #e0dfd7' }}>
@@ -339,15 +344,19 @@ export default function FicheLot() {
 
         {tab === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <ExtracteurDevis
-              lotId={lotId}
-              projectId={projectId}
-              companyId={lot.company_id}
-              onSuccess={() => loadData()}
-            />
-            <div onClick={() => setShowAddQuote(!showAddQuote)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#888', border: '0.5px dashed #e0dfd7', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
-              + Saisir manuellement
-            </div>
+            {isAdmin && (
+              <>
+                <ExtracteurDevis
+                  lotId={lotId}
+                  projectId={projectId}
+                  companyId={lot.company_id}
+                  onSuccess={() => loadData()}
+                />
+                <div onClick={() => setShowAddQuote(!showAddQuote)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, color: '#888', border: '0.5px dashed #e0dfd7', borderRadius: 8, padding: '9px', cursor: 'pointer', background: '#fff' }}>
+                  + Saisir manuellement
+                </div>
+              </>
+            )}
 
             {showAddQuote && (
               <div style={{ background: '#fff', border: '0.5px solid #e0dfd7', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -438,11 +447,13 @@ export default function FicheLot() {
 
         {tab === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div onClick={() => setShowAjout(!showAjout)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
-              {showAjout ? 'Fermer' : '+ Ajouter une facture'}
-            </div>
+            {isAdmin && (
+              <div onClick={() => setShowAjout(!showAjout)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#185FA5', border: '0.5px solid #185FA5', borderRadius: 8, padding: '10px', cursor: 'pointer', background: '#E6F1FB' }}>
+                {showAjout ? 'Fermer' : '+ Ajouter une facture'}
+              </div>
+            )}
 
-            {showAjout && (
+            {showAjout && isAdmin && (
               <AjoutFacture
                 projectId={projectId}
                 lots={allLots}
@@ -503,11 +514,13 @@ export default function FicheLot() {
 
         {tab === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AjoutDocument
-              projectId={projectId}
-              companyId={lot.company_id}
-              onSuccess={() => loadData()}
-            />
+            {isAdmin && (
+              <AjoutDocument
+                projectId={projectId}
+                companyId={lot.company_id}
+                onSuccess={() => loadData()}
+              />
+            )}
             {lotDocuments.length > 0 && (
               <div style={{ fontSize: 11, fontWeight: 500, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>
                 Documents récents
@@ -539,6 +552,3 @@ export default function FicheLot() {
 }
 
 const inp = { fontSize: 13, padding: '8px 10px', borderRadius: 8, border: '0.5px solid #e0dfd7', background: '#fff', color: '#1a1a1a', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }
-const card = { background: '#f5f4f0', borderRadius: 8, padding: '10px 12px' }
-const cardLabel = { fontSize: 11, color: '#888', marginBottom: 4 }
-const cardVal = { fontSize: 16, fontWeight: 500, color: '#1a1a1a' }
